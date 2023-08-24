@@ -1,0 +1,157 @@
+#!/bin/bash
+#
+# This script encrypts and decrypts files using encryption algos
+# like AES
+
+# This fxn asks user for necessary encryption/decryption parameters
+param(){
+  echo "##### This is the best File Encryption and Decryption Tool! #####\n"
+  
+  while true; do
+    read -p "Do you want to encrypt or decrypt a file (e/d): " enc_choice
+    if [[ "${enc_choice}" == 'e' || "${enc_choice}" == 'd' ]]; then
+      break
+    elif [[ -z "${enc_choice}" ]]; then
+      echo "This field cannot be empty."
+    else
+      echo -e "Please pick a valid option.\n"
+    fi
+  done
+  
+  while true; do
+    read -p "Input file: " input_file
+    if [[ $(find ~ -type f -name "${input_file}") ]]; then
+      input_file=$(find ~ -type f -name "${input_file}")
+      
+      # This checks if the user has permission to read the file
+      if [ -r "${input_file}" ]; then
+        echo "The filepath: ${input_file}"
+        break
+      else
+        echo "Seems you do not have permission to read this file."
+      fi
+      
+    elif [[ -z "${input_file}" ]]; then
+      echo "This field cannot be empty. Please try again."
+    else
+      echo "File not found! Please check the spelling and try again."
+    fi
+  done
+  
+  while true; do
+    read -p "Which file would you want to store the output in: " output_file
+    
+    if [[ $(find ~ -type f -name "${output_file}") ]]; then
+      output_file=$(find ~ -type f -name "${output_file}")
+      
+      # This checks if the user can write to the file
+      if [ -w "${output_file}" ]; then
+        echo -e "The filepath: ${output_file}"
+        break
+      else
+        echo "You do not have permission to write to this file."
+      fi
+      
+    elif [[ -z "${output_file}" ]]; then
+      echo "This field cannot be empty. Please try again."
+    else
+      echo "File not found! Please check the spelling and try again."
+    fi
+  done
+}
+
+# This fxn checks the key requirements
+check_key_requirements(){  
+  echo -e "\n##### Requirements for encryption key #####\n1)It must have greater than 11 characters.\n2) It should contain at least one uppercase letter, number and symbol."
+  
+  while true; do
+    read -s -p "Please input your key: " crypt_key
+    if [[ "${#crypt_key}" -le 9 ]]; then
+      echo "Your key is too short."
+    elif [[ ! "${crypt_key}" =~ [0-9] ]]; then
+      echo "Your key should contain at least one number."
+    elif [[ ! "${crypt_key}" =~ [A-Z] ]]; then
+      echo "Your key must have an uppercase letter."
+    elif [[ ! "${crypt_key}" =~ [!@#$%^*()-=_+] ]]; then
+      echo "Your key must have a symbol."
+    else
+      break
+    fi
+  done
+}
+
+# This is the encryption function
+encryption(){
+  openssl enc -e -"$1" \
+    -k "${crypt_key}" \
+    -in "${input_file}" 2> /dev/null \
+    | pv -bp -s $(stat -c%s "${input_file}") \
+    > "${output_file}"
+}
+
+# This is the deryption function
+decryption(){
+  openssl enc -d -"$1" \
+    -k "${crypt_key}" \
+    -in "${input_file}" 2> /dev/null \
+    | pv -bp -s $(stat -c%s "${input_file}") \
+    > "${output_file}"
+}
+
+list_encryptions(){
+  columns=3
+  list_of_encryptions=($(openssl enc -list \
+                          | awk "/-${enc_keyword}/ {print $1}"))
+      
+  if [ -z "${list_of_encryptions}" ]; then
+    echo "There were no encryptions identified. Please try again."
+  else
+      
+    # This lists the encryptions in columns of three
+    for ((i=0; i<${#list_of_encryptions[@]}; i += columns)); do
+      printf "%-17s %-17s %-17s\n" \
+        "${list_of_encryptions[i]}" \
+        "${list_of_encryptions[i+1]}" \
+        "${list_of_encryptions[i+2]}"
+    done
+  fi
+}
+
+# This fxn performs the encryption or decryption
+cryptography(){
+  def_enc_type="aes-256-cbc"
+  
+  while true; do
+    echo -en "\n\nPlease enter a keyword for the type of encryption you want to use or press enter to go with the default (aes-256-cbc):"
+    read enc_keyword
+    
+    # An empty variable means the user pressed Enter
+    if [ -z "${enc_keyword}" ]; then
+      echo "You chose the default encryption."
+      if [[ "${enc_choice}" == 'e' ]]; then
+        encryption "${def_enc_type}"
+        break
+      else
+        decryption "${def_enc_type}"
+        break
+      fi
+    else
+      list_encryptions
+      read -p "Type in your choice: " enc_type
+      
+      if [[ "${enc_choice}" == 'e' ]]; then
+        encryption "${enc_type}"
+        break
+      else
+        decryption "${enc_type}"
+        break
+      fi
+    fi
+  done
+  echo -e "\nSaved successfully. You can view it at ${output_file}"
+}
+
+# Fxns call
+param
+check_key_requirements
+cryptography
