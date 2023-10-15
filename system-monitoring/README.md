@@ -51,10 +51,10 @@ steps:
 1.	Get a Google App Password:
 -	Go to [Sign in with app passwords - Google Account Help](https://support.google.com/accounts/answer/185833?visit_id=638328760287583675-3974505755&p=InvalidSecondFactor&rd=1)
   to generate an App password associated with your account. This
- 	password will be used to authenticate the script with the Gmail SMTP
- 	server.
+ 	password will be used to authenticate the script with the Gmail
+ 	SMTP server.
 
-3.	Configure your system's ssmtp.conf file:
+2.	Configure your system's ssmtp.conf file:
 -	The ssmtp.conf file was created when you installed the ssmtp utility.
   This contains the configuration information the utility uses to
  	access a SMTP server. It is typically in the /etc/ssmtp directory.
